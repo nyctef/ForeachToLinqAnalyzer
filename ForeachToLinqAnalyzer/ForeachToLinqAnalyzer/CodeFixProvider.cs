@@ -39,10 +39,21 @@ namespace ForeachToLinqAnalyzer
             var diagnosticSpan = diagnostic.Location.SourceSpan;
             var ifStatement = root.FindToken(diagnosticSpan.Start).Parent.AncestorsAndSelf().OfType<IfStatementSyntax>().First();
             var feStatement = root.FindToken(diagnosticSpan.Start).Parent.AncestorsAndSelf().OfType<ForEachStatementSyntax>().First();
-            context.RegisterCodeFix(
-                CodeAction.Create("Convert if statement to LINQ method chain", 
-                c => ConvertIfToLINQ(context.Document, ifStatement, feStatement, c)), 
-                diagnostic);
+            var ifType = diagnostic.Properties[ForeachToLinqAnalyzer.IfType];
+            if (ifType == ForeachToLinqAnalyzer.ContainingIf)
+            {
+                context.RegisterCodeFix(
+                    CodeAction.Create("Convert if statement to LINQ method chain",
+                    c => ConvertIfToLINQ(context.Document, ifStatement, feStatement, c)),
+                    diagnostic);
+            }
+            else if (ifType == ForeachToLinqAnalyzer.IfWithContinue)
+            {
+                context.RegisterCodeFix(
+                    CodeAction.Create("Convert if statement to LINQ method chain",
+                    c => ConvertIfContinueToLINQ(context.Document, ifStatement, feStatement, c)),
+                    diagnostic);
+            }
         }
 
         private async Task<Document> ConvertIfToLINQ(Document document, IfStatementSyntax ifStatement, ForEachStatementSyntax feStatement, CancellationToken c)
@@ -63,6 +74,33 @@ namespace ForeachToLinqAnalyzer
             var newFeStatement = feStatement
                 .WithExpression((ExpressionSyntax)whereCall)
                 .WithStatement(ifStatement.Statement.WithAdditionalAnnotations(Formatter.Annotation));
+
+            var newRoot = root.ReplaceNode(feStatement, newFeStatement);
+            return document.WithSyntaxRoot(newRoot);
+        }
+
+        private async Task<Document> ConvertIfContinueToLINQ(Document document, IfStatementSyntax ifStatement, ForEachStatementSyntax feStatement, CancellationToken c)
+        {
+            var generator = SyntaxGenerator.GetGenerator(document);
+
+            var variableName = ifStatement.Condition.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>().Single(x => x.Identifier.Text == feStatement.Identifier.Text);
+
+            var whereCall = generator.InvocationExpression(
+                generator.MemberAccessExpression(feStatement.Expression, "Where"),
+                generator.Argument(
+                    generator.ValueReturningLambdaExpression(
+                        new[] { generator.LambdaParameter("x") },
+                        generator.LogicalNotExpression(
+                            ifStatement.Condition.ReplaceNode(variableName, generator.IdentifierName("x"))))));
+
+            var root = await document.GetSyntaxRootAsync(c);
+
+            var restOfForeachBody = feStatement.Statement
+                .RemoveNode(ifStatement, SyntaxRemoveOptions.AddElasticMarker)
+                .WithAdditionalAnnotations(Formatter.Annotation);
+            var newFeStatement = feStatement
+                .WithExpression((ExpressionSyntax)whereCall)
+                .WithStatement(restOfForeachBody);
 
             var newRoot = root.ReplaceNode(feStatement, newFeStatement);
             return document.WithSyntaxRoot(newRoot);

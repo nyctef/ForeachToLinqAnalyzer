@@ -31,6 +31,10 @@ namespace ForeachToLinqAnalyzer
             context.RegisterSyntaxTreeAction(AnalyzeSymbol);
         }
 
+        internal static string ContainingIf = "--ContainingIf";
+        internal static string IfWithContinue = "--IfWithContinue";
+        internal static string IfType = "--IfType";
+
         private static async void AnalyzeSymbol(SyntaxTreeAnalysisContext context)
         {
             var cancel = context.CancellationToken;
@@ -41,29 +45,50 @@ namespace ForeachToLinqAnalyzer
                 var loopVariableName = fe.Identifier.Text;
 
                 IfStatementSyntax ifStatement;
-                if (!TrySearchForSingleIfStatement(fe, out ifStatement))
-                {
-                    continue;
-                }
+                string ifType;
 
-                var ifExpression = ifStatement.Condition;
-                var notEqualsExpression = ifExpression as BinaryExpressionSyntax;
-                if (notEqualsExpression != null && notEqualsExpression.Kind() == SyntaxKind.NotEqualsExpression)
+                if (TrySearchForIfThenContinueStatement(fe, out ifStatement, out ifType) ||
+                    TrySearchForSingleIfStatement(fe, out ifStatement, out ifType))
                 {
+                    var ifExpression = ifStatement.Condition;
                     var identifiersInExpression = ifExpression.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>();
                     var containsLoopVariable = identifiersInExpression.Any(x => x.Identifier.Text == loopVariableName);
                     if (containsLoopVariable)
                     {
-                        context.ReportDiagnostic(Diagnostic.Create(Rule, ifStatement.Condition.GetLocation()));
+                        var properties = new Dictionary<string, string> { { IfType, ifType } }.ToImmutableDictionary();
+                        context.ReportDiagnostic(Diagnostic.Create(Rule, ifStatement.Condition.GetLocation(), properties));
                     }
                 }
             }
         }
 
-        private static bool TrySearchForSingleIfStatement(ForEachStatementSyntax fe, out IfStatementSyntax ifStatement)
+        private static bool TrySearchForIfThenContinueStatement(ForEachStatementSyntax fe, out IfStatementSyntax ifStatement, out string ifType)
+        {
+            if (fe.Statement is BlockSyntax)
+            {
+                var block = ((BlockSyntax)fe.Statement);
+                if (block.Statements.Count > 1 && block.Statements.First() is IfStatementSyntax)
+                {
+                    ifStatement = (block.Statements.FirstOrDefault() as IfStatementSyntax);
+                    if (ifStatement?.Statement is ContinueStatementSyntax || 
+                        ((ifStatement?.Statement as BlockSyntax)?.Statements)?.FirstOrDefault() is ContinueStatementSyntax)
+                    {
+                        ifType = IfWithContinue;
+                        return true;
+                    }
+                }
+            }
+
+            ifStatement = null;
+            ifType = null;
+            return false;
+        }
+
+        private static bool TrySearchForSingleIfStatement(ForEachStatementSyntax fe, out IfStatementSyntax ifStatement, out string ifType)
         {
             if (fe.Statement is IfStatementSyntax)
             {
+                ifType = ContainingIf;
                 ifStatement = ((IfStatementSyntax)fe.Statement);
                 return true;
             }
@@ -74,11 +99,13 @@ namespace ForeachToLinqAnalyzer
                 if (block.Statements.Count == 1 && block.Statements.Single() is IfStatementSyntax)
                 {
                     ifStatement = ((IfStatementSyntax)block.Statements.Single());
+                    ifType = ContainingIf;
                     return true;
                 }
             }
 
             ifStatement = null;
+            ifType = null;
             return false;
         }
     }

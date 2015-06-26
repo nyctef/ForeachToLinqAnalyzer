@@ -158,6 +158,34 @@ namespace ConsoleApplication1
             Assert.AreEqual(0, diagnostics.Length);
         }
 
+        [TestMethod]
+        public void SuggestsForInitialIfThenContinueStatement()
+        {
+            var testCode = string.Format(codeTemplate, @"
+            foreach (var foo in bar) 
+            {
+                if (foo.Count == 3) 
+                {
+                    continue;
+                }
+                // carry on if Count != 3
+                foo.Frombulate();
+            }");
+            var diagnostics = GetDiagnostics(testCode);
+
+            Assert.AreEqual(1, diagnostics.Length);
+            Assert.AreEqual("foo.Count == 3", GetDiagnosticCode(testCode, diagnostics.Single()));
+
+            var fixedCode = string.Format(codeTemplate, @"
+            foreach (var foo in bar.Where(x => !(x.Count == 3)))
+            {
+                // carry on if Count != 3
+                foo.Frombulate();
+            }");
+
+            VerifyCSharpFix(testCode, fixedCode);
+        }
+
         private string GetDiagnosticCode(string code, Diagnostic diagnostic)
         {
             var span = diagnostic.Location.SourceSpan;
