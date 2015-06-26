@@ -141,7 +141,7 @@ namespace ConsoleApplication1
 
             Assert.AreEqual(0, diagnostics.Length);
         }
-
+        
         [TestMethod]
         public void DoesntSuggestWhenIfStatementIsUnrelated()
         {
@@ -184,6 +184,18 @@ namespace ConsoleApplication1
             }");
 
             VerifyCSharpFix(testCode, fixedCode);
+        }
+
+        [TestMethod]
+        public void DoesntSuggestForWritelineWithoutBlock()
+        {
+            var testCode = string.Format(codeTemplate, @"
+            foreach (var foo in bar) 
+                Console.WriteLine(""fizz or buzz or something"");
+            ");
+            var diagnostics = GetDiagnostics(testCode);
+
+            Assert.AreEqual(0, diagnostics.Length);
         }
 
         private string GetDiagnosticCode(string code, Diagnostic diagnostic)
