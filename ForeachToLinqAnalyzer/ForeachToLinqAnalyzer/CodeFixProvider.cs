@@ -63,9 +63,10 @@ namespace ForeachToLinqAnalyzer
 
             var newFeStatement = feStatement
                 .WithExpression((ExpressionSyntax)whereCall)
-                .WithStatement(ifStatement.Statement);
+                .WithStatement(ifStatement.Statement.WithAdditionalAnnotations(Formatter.Annotation));
 
             var newRoot = root.ReplaceNode(feStatement, newFeStatement);
+            //var formattedRoot = Formatter.Format(newRoot, Formatter.Annotation, document.Project.Solution.Workspace);
             return document.WithSyntaxRoot(newRoot);
         }
     }

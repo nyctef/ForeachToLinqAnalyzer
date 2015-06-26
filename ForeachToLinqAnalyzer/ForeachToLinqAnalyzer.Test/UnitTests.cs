@@ -13,27 +13,27 @@ namespace ForeachToLinqAnalyzer.Test
     public class UnitTest : CodeFixVerifier
     {
         private readonly string codeTemplate = @"
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-    using System.Diagnostics;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Diagnostics;
 
-    namespace ConsoleApplication1
+namespace ConsoleApplication1
+{{
+    class TypeName
     {{
-        class TypeName
+
+        class Bar {{ public void Frombulate() {{ }} }}
+
+        void Foo() 
         {{
-
-            class Bar {{ public void Frombulate() {{ }} }}
-
-            void Foo() 
-            {{
-                var bar = new List<Bar>();
+            var bar = new List<Bar>();
 {0}
-            }}
         }}
-    }}";
+    }}
+}}";
         //No diagnostics expected to show up
         [TestMethod]
         public void TestMethod1()
@@ -58,22 +58,21 @@ namespace ForeachToLinqAnalyzer.Test
         public void SuggestsWhereWhenBodyOfForeachHasNullCheck()
         {
             var testCode = string.Format(codeTemplate, @"
-                foreach (var foo in bar) 
+            foreach (var foo in bar) 
+            {
+                if (foo != null) 
                 {
-                    if (foo != null) 
-                    {
-                        foo.Frombulate();
-                    }
-                }");
+                    foo.Frombulate();
+                }
+            }");
             var diagnostics = GetDiagnostics(testCode);
             Assert.AreEqual(1, diagnostics.Length);
 
-            // TODO: fix indentation
             var fixedCode = string.Format(codeTemplate, @"
-                foreach (var foo in bar.Where(x => x != null)) 
-                    {
-                        foo.Frombulate();
-                    }");
+            foreach (var foo in bar.Where(x => x != null))
+            {
+                foo.Frombulate();
+            }");
 
             VerifyCSharpFix(testCode, fixedCode);
         }
