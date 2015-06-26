@@ -94,7 +94,7 @@ namespace ForeachToLinqAnalyzer
             }
 
             var block = fe.Statement as BlockSyntax;
-            if (block.Statements.Count == 1 && block.Statements.Single() is IfStatementSyntax)
+            if ((block?.Statements)?.Count == 1 && (block?.Statements)?.Single() is IfStatementSyntax)
             {
                 ifStatement = ((IfStatementSyntax)block.Statements.Single());
                 ifType = ContainingIf;
