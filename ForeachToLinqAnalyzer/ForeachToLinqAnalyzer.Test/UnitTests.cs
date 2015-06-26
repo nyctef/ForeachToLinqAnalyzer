@@ -45,10 +45,7 @@ namespace ForeachToLinqAnalyzer.Test
 
             var diagnostics = GetDiagnostics(testCode);
 
-            Assert.AreEqual(1, diagnostics.Length);
-
-            var expectedCode = testCode.Replace("TypeName", "TYPENAME");
-            VerifyCSharpFix(testCode, expectedCode);
+            Assert.AreEqual(0, diagnostics.Length);
         }
 
         protected Diagnostic[] GetDiagnostics(string testCode)
