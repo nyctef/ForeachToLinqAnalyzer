@@ -93,15 +93,12 @@ namespace ForeachToLinqAnalyzer
                 return true;
             }
 
-            if (fe.Statement is BlockSyntax)
+            var block = fe.Statement as BlockSyntax;
+            if (block.Statements.Count == 1 && block.Statements.Single() is IfStatementSyntax)
             {
-                var block = ((BlockSyntax)fe.Statement);
-                if (block.Statements.Count == 1 && block.Statements.Single() is IfStatementSyntax)
-                {
-                    ifStatement = ((IfStatementSyntax)block.Statements.Single());
-                    ifType = ContainingIf;
-                    return true;
-                }
+                ifStatement = ((IfStatementSyntax)block.Statements.Single());
+                ifType = ContainingIf;
+                return true;
             }
 
             ifStatement = null;
