@@ -142,6 +142,22 @@ namespace ConsoleApplication1
             Assert.AreEqual(0, diagnostics.Length);
         }
 
+        [TestMethod]
+        public void DoesntSuggestWhenIfStatementIsUnrelated()
+        {
+            var testCode = string.Format(codeTemplate, @"
+            foreach (var foo in bar) 
+            {
+                if (1 == 1) 
+                {
+                    foo.Frombulate();
+                }
+            }");
+            var diagnostics = GetDiagnostics(testCode);
+
+            Assert.AreEqual(0, diagnostics.Length);
+        }
+
         private string GetDiagnosticCode(string code, Diagnostic diagnostic)
         {
             var span = diagnostic.Location.SourceSpan;
