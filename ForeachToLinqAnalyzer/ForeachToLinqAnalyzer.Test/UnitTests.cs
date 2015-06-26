@@ -11,7 +11,23 @@ namespace ForeachToLinqAnalyzer.Test
     [TestClass]
     public class UnitTest : CodeFixVerifier
     {
+        private readonly string codeTemplate = @"
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Text;
+    using System.Threading.Tasks;
+    using System.Diagnostics;
 
+    namespace ConsoleApplication1
+    {{
+        class TypeName
+        {{
+            void Foo() {{
+                {0}
+            }}
+        }}
+    }}";
         //No diagnostics expected to show up
         [TestMethod]
         public void TestMethod1()
@@ -25,48 +41,19 @@ namespace ForeachToLinqAnalyzer.Test
         [TestMethod]
         public void TestMethod2()
         {
-            var test = @"
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-    using System.Diagnostics;
+            var testCode = string.Format(codeTemplate, "");
 
-    namespace ConsoleApplication1
-    {
-        class TypeName
-        {   
+            var diagnostics = GetDiagnostics(testCode);
+
+            Assert.AreEqual(1, diagnostics.Length);
+
+            var expectedCode = testCode.Replace("TypeName", "TYPENAME");
+            VerifyCSharpFix(testCode, expectedCode);
         }
-    }";
-            var expected = new DiagnosticResult
-            {
-                Id = ForeachToLinqAnalyzerAnalyzer.DiagnosticId,
-                Message = String.Format("Type name '{0}' contains lowercase letters", "TypeName"),
-                Severity = DiagnosticSeverity.Warning,
-                Locations =
-                    new[] {
-                            new DiagnosticResultLocation("Test0.cs", 11, 15)
-                        }
-            };
 
-            VerifyCSharpDiagnostic(test, expected);
-
-            var fixtest = @"
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-    using System.Diagnostics;
-
-    namespace ConsoleApplication1
-    {
-        class TYPENAME
-        {   
-        }
-    }";
-            VerifyCSharpFix(test, fixtest);
+        protected Diagnostic[] GetDiagnostics(string testCode)
+        {
+            return GetSortedDiagnostics(new[] { testCode }, LanguageNames.CSharp, GetCSharpDiagnosticAnalyzer());
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()
