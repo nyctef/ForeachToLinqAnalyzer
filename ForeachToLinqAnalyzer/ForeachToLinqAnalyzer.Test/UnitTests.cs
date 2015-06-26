@@ -80,6 +80,26 @@ namespace ConsoleApplication1
             VerifyCSharpFix(testCode, fixedCode);
         }
 
+        [TestMethod]
+        public void CanOperateOnComplexForeachExpression()
+        {
+            var testCode = string.Format(codeTemplate, @"
+            foreach (var foo in bar.OfType<object>()) 
+            {
+                if (foo != null) 
+                {
+                    foo.Frombulate();
+                }
+            }");
+            var fixedCode = string.Format(codeTemplate, @"
+            foreach (var foo in bar.OfType<object>().Where(x => x != null))
+            {
+                foo.Frombulate();
+            }");
+
+            VerifyCSharpFix(testCode, fixedCode);
+        }
+
         private string GetDiagnosticCode(string code, Diagnostic diagnostic)
         {
             var span = diagnostic.Location.SourceSpan;
