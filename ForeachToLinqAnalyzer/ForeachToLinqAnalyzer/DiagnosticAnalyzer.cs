@@ -59,7 +59,7 @@ namespace ForeachToLinqAnalyzer
                         var leftIsTheLoopVariable = left != null && left.Identifier.Text == loopVariable.Name;
                         if (leftIsTheLoopVariable && rightIsNull)
                         {
-                            context.ReportDiagnostic(Diagnostic.Create(Rule, i.GetLocation()));
+                            context.ReportDiagnostic(Diagnostic.Create(Rule, i.Condition.GetLocation()));
                         }
                     }
                 }

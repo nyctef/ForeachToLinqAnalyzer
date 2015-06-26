@@ -6,6 +6,7 @@ using System;
 using TestHelper;
 using ForeachToLinqAnalyzer;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ForeachToLinqAnalyzer.Test
 {
@@ -66,7 +67,9 @@ namespace ConsoleApplication1
                 }
             }");
             var diagnostics = GetDiagnostics(testCode);
+
             Assert.AreEqual(1, diagnostics.Length);
+            Assert.AreEqual("foo != null", GetDiagnosticCode(testCode, diagnostics.Single()));
 
             var fixedCode = string.Format(codeTemplate, @"
             foreach (var foo in bar.Where(x => x != null))
@@ -75,6 +78,12 @@ namespace ConsoleApplication1
             }");
 
             VerifyCSharpFix(testCode, fixedCode);
+        }
+
+        private string GetDiagnosticCode(string code, Diagnostic diagnostic)
+        {
+            var span = diagnostic.Location.SourceSpan;
+            return code.Substring(span.Start, span.Length);
         }
 
         protected Diagnostic[] GetDiagnostics(string testCode)
