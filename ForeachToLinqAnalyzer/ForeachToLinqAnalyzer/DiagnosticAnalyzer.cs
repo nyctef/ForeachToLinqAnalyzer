@@ -28,13 +28,13 @@ namespace ForeachToLinqAnalyzer
 
         public override void Initialize(AnalysisContext context)
         {
-            context.RegisterSemanticModelAction(AnalyzeSymbol);
+            context.RegisterSyntaxTreeAction(AnalyzeSymbol);
         }
 
-        private static async void AnalyzeSymbol(SemanticModelAnalysisContext context)
+        private static async void AnalyzeSymbol(SyntaxTreeAnalysisContext context)
         {
             var cancel = context.CancellationToken;
-            var tree = await context.SemanticModel.SyntaxTree.GetRootAsync(cancel);
+            var tree = await context.Tree.GetRootAsync(cancel);
             var foreachs = tree.DescendantNodes().OfType<ForEachStatementSyntax>().ToList();
             foreach (var fe in foreachs)
             {
