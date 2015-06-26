@@ -40,23 +40,46 @@ namespace ForeachToLinqAnalyzer
             {
                 var loopVariableName = fe.Identifier.Text;
 
-                var ifs = fe.DescendantNodes().OfType<IfStatementSyntax>();
-
-                foreach (var i in ifs)
+                IfStatementSyntax ifStatement;
+                if (!TrySearchForSingleIfStatement(fe, out ifStatement))
                 {
-                    var ifExpression = i.Condition;
-                    var notEqualsExpression = ifExpression as BinaryExpressionSyntax;
-                    if (notEqualsExpression != null && notEqualsExpression.Kind() == SyntaxKind.NotEqualsExpression)
+                    continue;
+                }
+
+                var ifExpression = ifStatement.Condition;
+                var notEqualsExpression = ifExpression as BinaryExpressionSyntax;
+                if (notEqualsExpression != null && notEqualsExpression.Kind() == SyntaxKind.NotEqualsExpression)
+                {
+                    var identifiersInExpression = ifExpression.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>();
+                    var containsLoopVariable = identifiersInExpression.Any(x => x.Identifier.Text == loopVariableName);
+                    if (containsLoopVariable)
                     {
-                        var identifiersInExpression = ifExpression.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>();
-                        var containsLoopVariable = identifiersInExpression.Any(x => x.Identifier.Text == loopVariableName);
-                        if (containsLoopVariable)
-                        {
-                            context.ReportDiagnostic(Diagnostic.Create(Rule, i.Condition.GetLocation()));
-                        }
+                        context.ReportDiagnostic(Diagnostic.Create(Rule, ifStatement.Condition.GetLocation()));
                     }
                 }
             }
+        }
+
+        private static bool TrySearchForSingleIfStatement(ForEachStatementSyntax fe, out IfStatementSyntax ifStatement)
+        {
+            if (fe.Statement is IfStatementSyntax)
+            {
+                ifStatement = ((IfStatementSyntax)fe.Statement);
+                return true;
+            }
+
+            if (fe.Statement is BlockSyntax)
+            {
+                var block = ((BlockSyntax)fe.Statement);
+                if (block.Statements.Count == 1 && block.Statements.Single() is IfStatementSyntax)
+                {
+                    ifStatement = ((IfStatementSyntax)block.Statements.Single());
+                    return true;
+                }
+            }
+
+            ifStatement = null;
+            return false;
         }
     }
 }

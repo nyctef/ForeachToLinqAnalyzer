@@ -125,6 +125,23 @@ namespace ConsoleApplication1
             VerifyCSharpFix(testCode, fixedCode);
         }
 
+        [TestMethod]
+        public void DoesntSuggestWhenBodyOfForeachHasStatementsOutsideOfIf()
+        {
+            var testCode = string.Format(codeTemplate, @"
+            foreach (var foo in bar) 
+            {
+                if (foo.Count != 3) 
+                {
+                    foo.Frombulate();
+                }
+                Console.WriteLine(foo);
+            }");
+            var diagnostics = GetDiagnostics(testCode);
+
+            Assert.AreEqual(0, diagnostics.Length);
+        }
+
         private string GetDiagnosticCode(string code, Diagnostic diagnostic)
         {
             var span = diagnostic.Location.SourceSpan;
