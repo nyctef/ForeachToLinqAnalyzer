@@ -26,7 +26,7 @@ namespace ConsoleApplication1
     class TypeName
     {{
 
-        class Bar {{ public void Frombulate() {{ }} }}
+        class Bar {{ public void Frombulate() {{ }} public int Count {{ get; }} }}
 
         void Foo() 
         {{
@@ -93,6 +93,31 @@ namespace ConsoleApplication1
             }");
             var fixedCode = string.Format(codeTemplate, @"
             foreach (var foo in bar.OfType<object>().Where(x => x != null))
+            {
+                foo.Frombulate();
+            }");
+
+            VerifyCSharpFix(testCode, fixedCode);
+        }
+
+        [TestMethod]
+        public void SuggestsWhenBodyOfForeachHasSimpleEqualityCheck()
+        {
+            var testCode = string.Format(codeTemplate, @"
+            foreach (var foo in bar) 
+            {
+                if (foo.Count != 3) 
+                {
+                    foo.Frombulate();
+                }
+            }");
+            var diagnostics = GetDiagnostics(testCode);
+
+            Assert.AreEqual(1, diagnostics.Length);
+            Assert.AreEqual("foo.Count != 3", GetDiagnosticCode(testCode, diagnostics.Single()));
+
+            var fixedCode = string.Format(codeTemplate, @"
+            foreach (var foo in bar.Where(x => x.Count != 3))
             {
                 foo.Frombulate();
             }");

@@ -35,7 +35,6 @@ namespace ForeachToLinqAnalyzer
         {
             var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
 
-            // TODO: Replace the following code with your own analysis, generating a CodeAction for each fix to suggest
             var diagnostic = context.Diagnostics.First();
             var diagnosticSpan = diagnostic.Location.SourceSpan;
             var ifStatement = root.FindToken(diagnosticSpan.Start).Parent.AncestorsAndSelf().OfType<IfStatementSyntax>().First();
@@ -50,7 +49,7 @@ namespace ForeachToLinqAnalyzer
         {
             var generator = SyntaxGenerator.GetGenerator(document);
 
-            var variableName = ifStatement.Condition.ChildNodes().OfType<IdentifierNameSyntax>().Single();
+            var variableName = ifStatement.Condition.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>().Single(x => x.Identifier.Text == feStatement.Identifier.Text);
 
             var whereCall = generator.InvocationExpression(
                 generator.MemberAccessExpression(feStatement.Expression, "Where"),
@@ -66,7 +65,6 @@ namespace ForeachToLinqAnalyzer
                 .WithStatement(ifStatement.Statement.WithAdditionalAnnotations(Formatter.Annotation));
 
             var newRoot = root.ReplaceNode(feStatement, newFeStatement);
-            //var formattedRoot = Formatter.Format(newRoot, Formatter.Annotation, document.Project.Solution.Workspace);
             return document.WithSyntaxRoot(newRoot);
         }
     }

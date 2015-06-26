@@ -28,21 +28,17 @@ namespace ForeachToLinqAnalyzer
 
         public override void Initialize(AnalysisContext context)
         {
-            // TODO: Consider registering other actions that act on syntax instead of or in addition to symbols
             context.RegisterSemanticModelAction(AnalyzeSymbol);
         }
 
         private static async void AnalyzeSymbol(SemanticModelAnalysisContext context)
         {
-            // TODO: Replace the following code with your own analysis, generating Diagnostic objects for any issues you find
             var cancel = context.CancellationToken;
             var tree = await context.SemanticModel.SyntaxTree.GetRootAsync(cancel);
             var foreachs = tree.DescendantNodes().OfType<ForEachStatementSyntax>().ToList();
             foreach (var fe in foreachs)
             {
-
-            var dataFlow = context.SemanticModel.AnalyzeDataFlow(fe);
-                var loopVariable = dataFlow.VariablesDeclared.Single(x => x.Name == fe.Identifier.Text);
+                var loopVariableName = fe.Identifier.Text;
 
                 var ifs = fe.DescendantNodes().OfType<IfStatementSyntax>();
 
@@ -52,12 +48,9 @@ namespace ForeachToLinqAnalyzer
                     var notEqualsExpression = ifExpression as BinaryExpressionSyntax;
                     if (notEqualsExpression != null && notEqualsExpression.Kind() == SyntaxKind.NotEqualsExpression)
                     {
-                        var left = notEqualsExpression.Left as IdentifierNameSyntax;
-                        var right = notEqualsExpression.Right as LiteralExpressionSyntax;
-                        // TODO: the first half of this (.Right == null) seems to be the bit that fires, weirdly enough >.>
-                        var rightIsNull = notEqualsExpression.Right == null || (right != null && right.Kind() == SyntaxKind.NullLiteralExpression);
-                        var leftIsTheLoopVariable = left != null && left.Identifier.Text == loopVariable.Name;
-                        if (leftIsTheLoopVariable && rightIsNull)
+                        var identifiersInExpression = ifExpression.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>();
+                        var containsLoopVariable = identifiersInExpression.Any(x => x.Identifier.Text == loopVariableName);
+                        if (containsLoopVariable)
                         {
                             context.ReportDiagnostic(Diagnostic.Create(Rule, i.Condition.GetLocation()));
                         }
