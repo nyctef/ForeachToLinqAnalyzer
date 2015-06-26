@@ -48,6 +48,26 @@ namespace ForeachToLinqAnalyzer.Test
             Assert.AreEqual(0, diagnostics.Length);
         }
 
+        [TestMethod]
+        public void SuggestsWhereWhenBodyOfForeachHasNullCheck()
+        {
+            var testCode = string.Format(codeTemplate,
+@"foreach (var foo in bar) {
+    if (bar != null) {
+        bar.Frombulate();
+    }
+}");
+            var diagnostics = GetDiagnostics(testCode);
+            Assert.AreEqual(1, diagnostics.Length);
+
+            var fixedCode = string.Format(codeTemplate,
+@"foreach (var foo in bar.Where(x => x != null)) {
+    bar.Frombulate();
+}");
+
+            VerifyCSharpFix(testCode, fixedCode);
+        }
+
         protected Diagnostic[] GetDiagnostics(string testCode)
         {
             return GetSortedDiagnostics(new[] { testCode }, LanguageNames.CSharp, GetCSharpDiagnosticAnalyzer());
