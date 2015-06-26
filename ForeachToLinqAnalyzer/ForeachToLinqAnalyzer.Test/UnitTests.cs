@@ -24,8 +24,13 @@ namespace ForeachToLinqAnalyzer.Test
     {{
         class TypeName
         {{
-            void Foo() {{
-                {0}
+
+            class Bar {{ public void Frombulate() {{ }} }}
+
+            void Foo() 
+            {{
+                var bar = new List<Bar>();
+{0}
             }}
         }}
     }}";
@@ -52,19 +57,23 @@ namespace ForeachToLinqAnalyzer.Test
         [TestMethod]
         public void SuggestsWhereWhenBodyOfForeachHasNullCheck()
         {
-            var testCode = string.Format(codeTemplate,
-@"foreach (var foo in bar) {
-    if (foo != null) {
-        foo.Frombulate();
-    }
-}");
+            var testCode = string.Format(codeTemplate, @"
+                foreach (var foo in bar) 
+                {
+                    if (foo != null) 
+                    {
+                        foo.Frombulate();
+                    }
+                }");
             var diagnostics = GetDiagnostics(testCode);
             Assert.AreEqual(1, diagnostics.Length);
 
-            var fixedCode = string.Format(codeTemplate,
-@"foreach (var foo in bar.Where(x => x != null)) {
-    foo.Frombulate();
-}");
+            // TODO: fix indentation
+            var fixedCode = string.Format(codeTemplate, @"
+                foreach (var foo in bar.Where(x => x != null)) 
+                    {
+                        foo.Frombulate();
+                    }");
 
             VerifyCSharpFix(testCode, fixedCode);
         }

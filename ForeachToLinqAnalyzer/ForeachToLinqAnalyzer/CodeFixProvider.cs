@@ -12,6 +12,9 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Rename;
 using Microsoft.CodeAnalysis.Text;
+using System.Diagnostics;
+using Microsoft.CodeAnalysis.Editing;
+using Microsoft.CodeAnalysis.Formatting;
 
 namespace ForeachToLinqAnalyzer
 {
@@ -33,16 +36,37 @@ namespace ForeachToLinqAnalyzer
             var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
 
             // TODO: Replace the following code with your own analysis, generating a CodeAction for each fix to suggest
-            //var diagnostic = context.Diagnostics.First();
-            //var diagnosticSpan = diagnostic.Location.SourceSpan;
+            var diagnostic = context.Diagnostics.First();
+            var diagnosticSpan = diagnostic.Location.SourceSpan;
+            var ifStatement = root.FindToken(diagnosticSpan.Start).Parent.AncestorsAndSelf().OfType<IfStatementSyntax>().First();
+            var feStatement = root.FindToken(diagnosticSpan.Start).Parent.AncestorsAndSelf().OfType<ForEachStatementSyntax>().First();
+            context.RegisterCodeFix(
+                CodeAction.Create("Convert if statement to LINQ method chain", 
+                c => ConvertIfToLINQ(context.Document, ifStatement, feStatement, c)), 
+                diagnostic);
+        }
 
-            //// Find the type declaration identified by the diagnostic.
-            //var declaration = root.FindToken(diagnosticSpan.Start).Parent.AncestorsAndSelf().OfType<TypeDeclarationSyntax>().First();
+        private async Task<Document> ConvertIfToLINQ(Document document, IfStatementSyntax ifStatement, ForEachStatementSyntax feStatement, CancellationToken c)
+        {
+            var generator = SyntaxGenerator.GetGenerator(document);
 
-            //// Register a code action that will invoke the fix.
-            //context.RegisterCodeFix(
-            //    CodeAction.Create("Make uppercase", c => MakeUppercaseAsync(context.Document, declaration, c)),
-            //    diagnostic);
+            var variableName = ifStatement.Condition.ChildNodes().OfType<IdentifierNameSyntax>().Single();
+
+            var whereCall = generator.InvocationExpression(
+                generator.MemberAccessExpression(feStatement.Expression, "Where"),
+                generator.Argument(
+                    generator.ValueReturningLambdaExpression(
+                        new[] { generator.LambdaParameter("x") }, 
+                        ifStatement.Condition.ReplaceNode(variableName, generator.IdentifierName("x")))));
+
+            var root = await document.GetSyntaxRootAsync(c);
+
+            var newFeStatement = feStatement
+                .WithExpression((ExpressionSyntax)whereCall)
+                .WithStatement(ifStatement.Statement);
+
+            var newRoot = root.ReplaceNode(feStatement, newFeStatement);
+            return document.WithSyntaxRoot(newRoot);
         }
     }
 }
