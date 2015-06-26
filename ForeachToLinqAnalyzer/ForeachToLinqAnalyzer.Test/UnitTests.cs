@@ -5,6 +5,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using TestHelper;
 using ForeachToLinqAnalyzer;
+using System.Collections.Generic;
 
 namespace ForeachToLinqAnalyzer.Test
 {
@@ -53,8 +54,8 @@ namespace ForeachToLinqAnalyzer.Test
         {
             var testCode = string.Format(codeTemplate,
 @"foreach (var foo in bar) {
-    if (bar != null) {
-        bar.Frombulate();
+    if (foo != null) {
+        foo.Frombulate();
     }
 }");
             var diagnostics = GetDiagnostics(testCode);
@@ -62,7 +63,7 @@ namespace ForeachToLinqAnalyzer.Test
 
             var fixedCode = string.Format(codeTemplate,
 @"foreach (var foo in bar.Where(x => x != null)) {
-    bar.Frombulate();
+    foo.Frombulate();
 }");
 
             VerifyCSharpFix(testCode, fixedCode);
@@ -81,6 +82,18 @@ namespace ForeachToLinqAnalyzer.Test
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
             return new ForeachToLinqAnalyzer();
+        }
+
+        void ScratchPad()
+        {
+            var bar = new List<string>();
+            foreach (var foo in bar)
+            {
+                if (foo != null)
+                {
+                    Console.WriteLine(foo);
+                }
+            }
         }
     }
 }

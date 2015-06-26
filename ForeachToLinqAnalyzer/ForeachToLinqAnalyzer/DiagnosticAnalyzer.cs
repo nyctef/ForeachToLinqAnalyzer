@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
@@ -28,22 +29,41 @@ namespace ForeachToLinqAnalyzer
         public override void Initialize(AnalysisContext context)
         {
             // TODO: Consider registering other actions that act on syntax instead of or in addition to symbols
-            context.RegisterSymbolAction(AnalyzeSymbol, SymbolKind.NamedType);
+            context.RegisterSemanticModelAction(AnalyzeSymbol);
         }
 
-        private static void AnalyzeSymbol(SymbolAnalysisContext context)
+        private static async void AnalyzeSymbol(SemanticModelAnalysisContext context)
         {
             // TODO: Replace the following code with your own analysis, generating Diagnostic objects for any issues you find
-            //var namedTypeSymbol = (INamedTypeSymbol)context.Symbol;
+            var cancel = context.CancellationToken;
+            var tree = await context.SemanticModel.SyntaxTree.GetRootAsync(cancel);
+            var foreachs = tree.DescendantNodes().OfType<ForEachStatementSyntax>().ToList();
+            foreach (var fe in foreachs)
+            {
 
-            //// Find just those named type symbols with names containing lowercase letters.
-            //if (namedTypeSymbol.Name.ToCharArray().Any(char.IsLower))
-            //{
-            //    // For all such symbols, produce a diagnostic.
-            //    var diagnostic = Diagnostic.Create(Rule, namedTypeSymbol.Locations[0], namedTypeSymbol.Name);
+            var dataFlow = context.SemanticModel.AnalyzeDataFlow(fe);
+                var loopVariable = dataFlow.VariablesDeclared.Single(x => x.Name == fe.Identifier.Text);
 
-            //    context.ReportDiagnostic(diagnostic);
-            //}
+                var ifs = fe.DescendantNodes().OfType<IfStatementSyntax>();
+
+                foreach (var i in ifs)
+                {
+                    var ifExpression = i.Condition;
+                    var notEqualsExpression = ifExpression as BinaryExpressionSyntax;
+                    if (notEqualsExpression != null && notEqualsExpression.Kind() == SyntaxKind.NotEqualsExpression)
+                    {
+                        var left = notEqualsExpression.Left as IdentifierNameSyntax;
+                        var right = notEqualsExpression.Right as LiteralExpressionSyntax;
+                        // TODO: the first half of this (.Right == null) seems to be the bit that fires, weirdly enough >.>
+                        var rightIsNull = notEqualsExpression.Right == null || (right != null && right.Kind() == SyntaxKind.NullLiteralExpression);
+                        var leftIsTheLoopVariable = left != null && left.Identifier.Text == loopVariable.Name;
+                        if (leftIsTheLoopVariable && rightIsNull)
+                        {
+                            context.ReportDiagnostic(Diagnostic.Create(Rule, i.GetLocation()));
+                        }
+                    }
+                }
+            }
         }
     }
 }
