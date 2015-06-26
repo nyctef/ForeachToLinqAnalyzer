@@ -15,12 +15,12 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace ForeachToLinqAnalyzer
 {
-    [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(ForeachToLinqAnalyzerCodeFixProvider)), Shared]
-    public class ForeachToLinqAnalyzerCodeFixProvider : CodeFixProvider
+    [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(ForeachToLinqCodeFixProvider)), Shared]
+    public class ForeachToLinqCodeFixProvider : CodeFixProvider
     {
         public sealed override ImmutableArray<string> FixableDiagnosticIds
         {
-            get { return ImmutableArray.Create(ForeachToLinqAnalyzerAnalyzer.DiagnosticId); }
+            get { return ImmutableArray.Create(ForeachToLinqAnalyzer.DiagnosticId); }
         }
 
         public sealed override FixAllProvider GetFixAllProvider()

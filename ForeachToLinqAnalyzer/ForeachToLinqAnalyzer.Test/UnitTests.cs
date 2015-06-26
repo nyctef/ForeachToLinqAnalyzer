@@ -55,12 +55,12 @@ namespace ForeachToLinqAnalyzer.Test
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()
         {
-            return new ForeachToLinqAnalyzerCodeFixProvider();
+            return new ForeachToLinqCodeFixProvider();
         }
 
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new ForeachToLinqAnalyzerAnalyzer();
+            return new ForeachToLinqAnalyzer();
         }
     }
 }

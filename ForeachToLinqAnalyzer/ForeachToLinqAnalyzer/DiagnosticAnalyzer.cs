@@ -11,7 +11,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace ForeachToLinqAnalyzer
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class ForeachToLinqAnalyzerAnalyzer : DiagnosticAnalyzer
+    public class ForeachToLinqAnalyzer : DiagnosticAnalyzer
     {
         public const string DiagnosticId = "ForeachToLinqAnalyzer";
 
