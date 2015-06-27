@@ -198,6 +198,26 @@ namespace ConsoleApplication1
             Assert.AreEqual(0, diagnostics.Length);
         }
 
+        [TestMethod]
+        public void DoesntSuggestWhenContainingIfStatementHasElseBlock()
+        {
+            var testCode = string.Format(codeTemplate, @"
+            foreach (var foo in bar) 
+            {
+                if (foo.Count == 3) 
+                {
+                    foo.Frombulate();
+                }
+                else
+                {
+                    Console.WriteLine(""Discombobulate instead"");
+                }
+            }");
+            var diagnostics = GetDiagnostics(testCode);
+
+            Assert.AreEqual(0, diagnostics.Length);
+        }
+
         private string GetDiagnosticCode(string code, Diagnostic diagnostic)
         {
             var span = diagnostic.Location.SourceSpan;
