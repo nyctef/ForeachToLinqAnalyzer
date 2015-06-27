@@ -62,7 +62,7 @@ namespace ForeachToLinqAnalyzer
                 }
 
                 LocalDeclarationStatementSyntax assignmentStatement;
-                if (TrySearchForVariableToSelect(fe, out assignmentStatement))
+                if (TrySearchForVariableToSelect(fe, out assignmentStatement, loopVariableName))
                 {
                     foreach (var declarator in assignmentStatement.Declaration.Variables)
                     {
@@ -120,11 +120,16 @@ namespace ForeachToLinqAnalyzer
             return false;
         }
 
-        private static bool TrySearchForVariableToSelect(ForEachStatementSyntax fe, out LocalDeclarationStatementSyntax assignmentStatement)
+        private static bool TrySearchForVariableToSelect(ForEachStatementSyntax fe, out LocalDeclarationStatementSyntax assignmentStatement, string loopVariableName)
         {
             var block = fe.Statement as BlockSyntax;
             if ((block?.Statements)?.FirstOrDefault() is LocalDeclarationStatementSyntax)
             {
+                if (block.Statements.Skip(1).SelectMany(x => x.DescendantNodesAndSelf()).OfType<IdentifierNameSyntax>().Any(x => x.Identifier.Text == loopVariableName))
+                {
+                    assignmentStatement = null;
+                    return false;
+                }
                 assignmentStatement = ((LocalDeclarationStatementSyntax)block.Statements.First());
                 return true;
             }

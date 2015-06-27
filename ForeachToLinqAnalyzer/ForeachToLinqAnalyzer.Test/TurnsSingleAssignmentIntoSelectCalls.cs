@@ -66,6 +66,40 @@ namespace ConsoleApplication1
         }
 
         [TestMethod]
+        public void DoesntBreakMultipleDeclaratorsInAssignment()
+        {
+            var testCode = string.Format(codeTemplate, @"
+            foreach (var foo in bar) 
+            {
+                var foo2 = foo.Increment(), foo3 = new Bar();
+                foo2.Frombulate();
+            }");
+
+            var fixedCode = string.Format(codeTemplate, @"
+            foreach (var foo2 in bar.Select(x => x.Increment()))
+            {
+                var foo3 = new Bar();
+                foo2.Frombulate();
+            }");
+
+            VerifyCSharpFix(testCode, fixedCode);
+        }
+
+        [TestMethod]
+        public void DoesntSuggestIfLoopVariableIsUsedLater()
+        {
+            var testCode = string.Format(codeTemplate, @"
+            foreach (var foo in bar) 
+            {
+                var foo2 = foo.Increment();
+                foo.Frombulate();
+            }");
+            var diagnostics = GetDiagnostics(testCode);
+
+            Assert.AreEqual(0, diagnostics.Length);
+        }
+
+        [TestMethod]
         public void DoesntBreakOnIncompleteCode()
         {
             var testCode = string.Format(codeTemplate, @"
