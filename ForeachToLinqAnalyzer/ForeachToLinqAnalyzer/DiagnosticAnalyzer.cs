@@ -82,7 +82,8 @@ namespace ForeachToLinqAnalyzer
             if (fe.Statement is BlockSyntax)
             {
                 var block = ((BlockSyntax)fe.Statement);
-                if (block.Statements.Count > 1 && block.Statements.First() is IfStatementSyntax)
+                if ((block.Statements.Count > 1 && block.Statements.First() is IfStatementSyntax) ||
+                    (block.Statements.Count > 0 && block.Statements.First() is IfStatementSyntax && ((IfStatementSyntax)block.Statements.First()).Else != null)                    )
                 {
                     ifStatement = (block.Statements.FirstOrDefault() as IfStatementSyntax);
                     if (ifStatement?.Statement is ContinueStatementSyntax || 

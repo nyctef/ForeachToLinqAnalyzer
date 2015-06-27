@@ -105,7 +105,7 @@ namespace ForeachToLinqAnalyzer
             var root = await document.GetSyntaxRootAsync(c);
 
             var restOfForeachBody = foreachStatement.Statement
-                .RemoveNode(ifStatement, SyntaxRemoveOptions.AddElasticMarker)
+                .ReplaceNode(ifStatement, ifStatement.Else?.Statement)
                 .WithAdditionalAnnotations(Formatter.Annotation);
             var newFeStatement = foreachStatement
                 .WithExpression((ExpressionSyntax)whereCall)

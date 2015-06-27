@@ -218,6 +218,40 @@ namespace ConsoleApplication1
             Assert.AreEqual(0, diagnostics.Length);
         }
 
+        [TestMethod]
+        public void SuggestsForIfContinueElseDoSomething()
+        {
+            var testCode = string.Format(codeTemplate, @"
+            foreach (var foo in bar) 
+            {
+                if (foo.Count == 3) 
+                {
+                    continue;
+                }
+                else
+                {
+                    Console.WriteLine(""Discombobulate instead"");
+                }
+                Console.WriteLine(""Do another thing"");
+            }");
+            var diagnostics = GetDiagnostics(testCode);
+
+            Assert.AreEqual(1, diagnostics.Length);
+            Assert.AreEqual("foo.Count == 3", GetDiagnosticCode(testCode, diagnostics.Single()));
+
+            // TODO: inline redundant block
+            var fixedCode = string.Format(codeTemplate, @"
+            foreach (var foo in bar.Where(x => !(x.Count == 3)))
+            {
+                {
+                    Console.WriteLine(""Discombobulate instead"");
+                }
+                Console.WriteLine(""Do another thing"");
+            }");
+
+            VerifyCSharpFix(testCode, fixedCode); ;
+        }
+
         private string GetDiagnosticCode(string code, Diagnostic diagnostic)
         {
             var span = diagnostic.Location.SourceSpan;
@@ -247,6 +281,10 @@ namespace ConsoleApplication1
                 if (foo != null)
                 {
                     Console.WriteLine(foo);
+                }
+                else
+                {
+                    continue;
                 }
 
                 var foo2 = foo.Replace("asdf", "asdfasdf");
