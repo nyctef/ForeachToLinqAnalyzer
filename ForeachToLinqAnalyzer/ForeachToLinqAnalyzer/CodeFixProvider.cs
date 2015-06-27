@@ -37,33 +37,42 @@ namespace ForeachToLinqAnalyzer
 
             var diagnostic = context.Diagnostics.First();
             var diagnosticSpan = diagnostic.Location.SourceSpan;
-            var ifStatement = root.FindToken(diagnosticSpan.Start).Parent.AncestorsAndSelf().OfType<IfStatementSyntax>().First();
-            var feStatement = root.FindToken(diagnosticSpan.Start).Parent.AncestorsAndSelf().OfType<ForEachStatementSyntax>().First();
-            var ifType = diagnostic.Properties[ForeachToLinqAnalyzer.IfType];
-            if (ifType == ForeachToLinqAnalyzer.ContainingIf)
+            var refactorType = diagnostic.Properties[ForeachToLinqAnalyzer.RefactorType];
+            var foreachStatement = root.FindToken(diagnosticSpan.Start).Parent.AncestorsAndSelf().OfType<ForEachStatementSyntax>().First();
+            if (refactorType == ForeachToLinqAnalyzer.ContainingIfToWhere)
             {
+                var ifStatement = root.FindToken(diagnosticSpan.Start).Parent.AncestorsAndSelf().OfType<IfStatementSyntax>().First();
                 context.RegisterCodeFix(
                     CodeAction.Create("Convert if statement to LINQ method chain",
-                    c => ConvertIfToLINQ(context.Document, ifStatement, feStatement, c)),
+                    c => ConvertIfToLINQ(context.Document, ifStatement, foreachStatement, c)),
                     diagnostic);
             }
-            else if (ifType == ForeachToLinqAnalyzer.IfWithContinue)
+            else if (refactorType == ForeachToLinqAnalyzer.IfWithContinueToWhere)
             {
+                var ifStatement = root.FindToken(diagnosticSpan.Start).Parent.AncestorsAndSelf().OfType<IfStatementSyntax>().First();
                 context.RegisterCodeFix(
                     CodeAction.Create("Convert if statement to LINQ method chain",
-                    c => ConvertIfContinueToLINQ(context.Document, ifStatement, feStatement, c)),
+                    c => ConvertIfContinueToLINQ(context.Document, ifStatement, foreachStatement, c)),
+                    diagnostic);
+            }
+            else if (refactorType == ForeachToLinqAnalyzer.VariableToSelect)
+            {
+                var variableDeclarator = root.FindToken(diagnosticSpan.Start).Parent.AncestorsAndSelf().OfType<VariableDeclaratorSyntax>().First();
+                context.RegisterCodeFix(
+                    CodeAction.Create("Convert variable assignment to LINQ method chain",
+                    c => ConvertVariableAssignmentToLINQ(context.Document, variableDeclarator, foreachStatement, c)),
                     diagnostic);
             }
         }
 
-        private async Task<Document> ConvertIfToLINQ(Document document, IfStatementSyntax ifStatement, ForEachStatementSyntax feStatement, CancellationToken c)
+        private async Task<Document> ConvertIfToLINQ(Document document, IfStatementSyntax ifStatement, ForEachStatementSyntax foreachStatement, CancellationToken c)
         {
             var generator = SyntaxGenerator.GetGenerator(document);
 
-            var variableName = ifStatement.Condition.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>().Single(x => x.Identifier.Text == feStatement.Identifier.Text);
+            var variableName = ifStatement.Condition.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>().Single(x => x.Identifier.Text == foreachStatement.Identifier.Text);
 
             var whereCall = generator.InvocationExpression(
-                generator.MemberAccessExpression(feStatement.Expression, "Where"),
+                generator.MemberAccessExpression(foreachStatement.Expression, "Where"),
                 generator.Argument(
                     generator.ValueReturningLambdaExpression(
                         new[] { generator.LambdaParameter("x") }, 
@@ -71,22 +80,22 @@ namespace ForeachToLinqAnalyzer
 
             var root = await document.GetSyntaxRootAsync(c);
 
-            var newFeStatement = feStatement
+            var newFeStatement = foreachStatement
                 .WithExpression((ExpressionSyntax)whereCall)
                 .WithStatement(ifStatement.Statement.WithAdditionalAnnotations(Formatter.Annotation));
 
-            var newRoot = root.ReplaceNode(feStatement, newFeStatement);
+            var newRoot = root.ReplaceNode(foreachStatement, newFeStatement);
             return document.WithSyntaxRoot(newRoot);
         }
 
-        private async Task<Document> ConvertIfContinueToLINQ(Document document, IfStatementSyntax ifStatement, ForEachStatementSyntax feStatement, CancellationToken c)
+        private async Task<Document> ConvertIfContinueToLINQ(Document document, IfStatementSyntax ifStatement, ForEachStatementSyntax foreachStatement, CancellationToken c)
         {
             var generator = SyntaxGenerator.GetGenerator(document);
 
-            var variableName = ifStatement.Condition.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>().Single(x => x.Identifier.Text == feStatement.Identifier.Text);
+            var variableName = ifStatement.Condition.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>().Single(x => x.Identifier.Text == foreachStatement.Identifier.Text);
 
             var whereCall = generator.InvocationExpression(
-                generator.MemberAccessExpression(feStatement.Expression, "Where"),
+                generator.MemberAccessExpression(foreachStatement.Expression, "Where"),
                 generator.Argument(
                     generator.ValueReturningLambdaExpression(
                         new[] { generator.LambdaParameter("x") },
@@ -95,15 +104,61 @@ namespace ForeachToLinqAnalyzer
 
             var root = await document.GetSyntaxRootAsync(c);
 
-            var restOfForeachBody = feStatement.Statement
+            var restOfForeachBody = foreachStatement.Statement
                 .RemoveNode(ifStatement, SyntaxRemoveOptions.AddElasticMarker)
                 .WithAdditionalAnnotations(Formatter.Annotation);
-            var newFeStatement = feStatement
+            var newFeStatement = foreachStatement
                 .WithExpression((ExpressionSyntax)whereCall)
                 .WithStatement(restOfForeachBody);
 
-            var newRoot = root.ReplaceNode(feStatement, newFeStatement);
+            var newRoot = root.ReplaceNode(foreachStatement, newFeStatement);
             return document.WithSyntaxRoot(newRoot);
+        }
+
+        private async Task<Document> ConvertVariableAssignmentToLINQ(Document document, VariableDeclaratorSyntax variableDeclarator, ForEachStatementSyntax foreachStatement, CancellationToken c)
+        {
+            var generator = SyntaxGenerator.GetGenerator(document);
+
+            var oldVariableName = foreachStatement.Identifier.Text;
+            var newVariableName = variableDeclarator.Identifier.Text;
+
+            var oldVariable = variableDeclarator.Initializer.Value.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>().Single(x => x.Identifier.Text == oldVariableName);
+
+            var selectCall = generator.InvocationExpression(
+                generator.MemberAccessExpression(foreachStatement.Expression, "Select"),
+                generator.Argument(
+                    generator.ValueReturningLambdaExpression(
+                        new[] { generator.LambdaParameter("x") },
+                            variableDeclarator.Initializer.Value.ReplaceNode(oldVariable, generator.IdentifierName("x")))));
+
+            var root = await document.GetSyntaxRootAsync(c);
+
+            Debug.WriteLine(variableDeclarator.Parent);
+            var restOfForeachBody = foreachStatement.Statement
+                .RemoveNode(variableDeclarator, SyntaxRemoveOptions.AddElasticMarker)
+                .WithAdditionalAnnotations(Formatter.Annotation);
+            var newFeStatement = foreachStatement
+                .WithExpression((ExpressionSyntax)selectCall)
+                .WithIdentifier(generator.IdentifierName(newVariableName).GetFirstToken())
+                .WithStatement(restOfForeachBody);
+
+            var newRoot = root.ReplaceNode(foreachStatement, newFeStatement);
+
+            var withEmptyVariableDeclarationsRemoved = new RemoveEmptyVariableDeclarationSyntax().Visit(newRoot);
+
+            return document.WithSyntaxRoot(withEmptyVariableDeclarationsRemoved);
+        }
+
+        private class RemoveEmptyVariableDeclarationSyntax : CSharpSyntaxRewriter
+        {
+            public override SyntaxNode VisitLocalDeclarationStatement(LocalDeclarationStatementSyntax node)
+            {
+                if (!node.Declaration.Variables.Any())
+                {
+                    return null;
+                }
+                return node;
+            }
         }
     }
 }

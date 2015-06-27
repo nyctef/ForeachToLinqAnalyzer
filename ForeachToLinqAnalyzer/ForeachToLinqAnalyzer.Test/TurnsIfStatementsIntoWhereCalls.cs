@@ -228,6 +228,8 @@ namespace ConsoleApplication1
                 {
                     Console.WriteLine(foo);
                 }
+
+                var foo2 = foo.Replace("asdf", "asdfasdf");
             }
         }
     }

@@ -31,9 +31,10 @@ namespace ForeachToLinqAnalyzer
             context.RegisterSyntaxTreeAction(AnalyzeSymbol);
         }
 
-        internal static string ContainingIf = "--ContainingIf";
-        internal static string IfWithContinue = "--IfWithContinue";
-        internal static string IfType = "--IfType";
+        internal static string ContainingIfToWhere = "--ContainingIf";
+        internal static string IfWithContinueToWhere = "--IfWithContinue";
+        internal static string VariableToSelect = "--VariableToWhere";
+        internal static string RefactorType = "--RefactorType";
 
         private static async void AnalyzeSymbol(SyntaxTreeAnalysisContext context)
         {
@@ -55,8 +56,21 @@ namespace ForeachToLinqAnalyzer
                     var containsLoopVariable = identifiersInExpression.Any(x => x.Identifier.Text == loopVariableName);
                     if (containsLoopVariable)
                     {
-                        var properties = new Dictionary<string, string> { { IfType, ifType } }.ToImmutableDictionary();
+                        var properties = new Dictionary<string, string> { { RefactorType, ifType } }.ToImmutableDictionary();
                         context.ReportDiagnostic(Diagnostic.Create(Rule, ifStatement.Condition.GetLocation(), properties));
+                    }
+                }
+
+                LocalDeclarationStatementSyntax assignmentStatement;
+                if (TrySearchForVariableToSelect(fe, out assignmentStatement))
+                {
+                    foreach (var declarator in assignmentStatement.Declaration.Variables)
+                    {
+                        if (declarator.Initializer?.DescendantNodes()?.OfType<IdentifierNameSyntax>()?.Any(x => x.Identifier.Text == loopVariableName) ?? false)
+                        {
+                            var properties = new Dictionary<string, string> { { RefactorType, VariableToSelect } }.ToImmutableDictionary();
+                            context.ReportDiagnostic(Diagnostic.Create(Rule, declarator.GetLocation(), properties));
+                        }
                     }
                 }
             }
@@ -73,7 +87,7 @@ namespace ForeachToLinqAnalyzer
                     if (ifStatement?.Statement is ContinueStatementSyntax || 
                         ((ifStatement?.Statement as BlockSyntax)?.Statements)?.FirstOrDefault() is ContinueStatementSyntax)
                     {
-                        ifType = IfWithContinue;
+                        ifType = IfWithContinueToWhere;
                         return true;
                     }
                 }
@@ -88,7 +102,7 @@ namespace ForeachToLinqAnalyzer
         {
             if (fe.Statement is IfStatementSyntax)
             {
-                ifType = ContainingIf;
+                ifType = ContainingIfToWhere;
                 ifStatement = ((IfStatementSyntax)fe.Statement);
                 return true;
             }
@@ -97,12 +111,25 @@ namespace ForeachToLinqAnalyzer
             if ((block?.Statements)?.Count == 1 && (block?.Statements)?.Single() is IfStatementSyntax)
             {
                 ifStatement = ((IfStatementSyntax)block.Statements.Single());
-                ifType = ContainingIf;
+                ifType = ContainingIfToWhere;
                 return true;
             }
 
             ifStatement = null;
             ifType = null;
+            return false;
+        }
+
+        private static bool TrySearchForVariableToSelect(ForEachStatementSyntax fe, out LocalDeclarationStatementSyntax assignmentStatement)
+        {
+            var block = fe.Statement as BlockSyntax;
+            if ((block?.Statements)?.FirstOrDefault() is LocalDeclarationStatementSyntax)
+            {
+                assignmentStatement = ((LocalDeclarationStatementSyntax)block.Statements.First());
+                return true;
+            }
+
+            assignmentStatement = null;
             return false;
         }
     }
