@@ -59,9 +59,9 @@ namespace ConsoleApplication1
         public void SuggestsWhereWhenBodyOfForeachHasNullCheck()
         {
             var testCode = string.Format(codeTemplate, @"
-            foreach (var foo in bar) 
+            foreach (var foo in bar)
             {
-                if (foo != null) 
+                if (foo != null)
                 {
                     foo.Frombulate();
                 }
@@ -84,7 +84,7 @@ namespace ConsoleApplication1
         public void FixDoesntBreakWhenLoopVariableIsUsedTwiceInIfClause()
         {
             var testCode = string.Format(codeTemplate, @"
-            foreach (var foo in bar) 
+            foreach (var foo in bar)
             {
                 if (foo != null && foo.Count != 3)
                 {
@@ -105,9 +105,9 @@ namespace ConsoleApplication1
         public void CanOperateOnComplexForeachExpression()
         {
             var testCode = string.Format(codeTemplate, @"
-            foreach (var foo in bar.OfType<object>()) 
+            foreach (var foo in bar.OfType<object>())
             {
-                if (foo != null) 
+                if (foo != null)
                 {
                     foo.Frombulate();
                 }
@@ -125,9 +125,9 @@ namespace ConsoleApplication1
         public void SuggestsWhenBodyOfForeachHasSimpleEqualityCheck()
         {
             var testCode = string.Format(codeTemplate, @"
-            foreach (var foo in bar) 
+            foreach (var foo in bar)
             {
-                if (foo.Count != 3) 
+                if (foo.Count != 3)
                 {
                     foo.Frombulate();
                 }
@@ -183,9 +183,9 @@ namespace ConsoleApplication1
         public void SuggestsForInitialIfThenContinueStatement()
         {
             var testCode = string.Format(codeTemplate, @"
-            foreach (var foo in bar) 
+            foreach (var foo in bar)
             {
-                if (foo.Count == 3) 
+                if (foo.Count == 3)
                 {
                     continue;
                 }
@@ -243,9 +243,9 @@ namespace ConsoleApplication1
         public void SuggestsForIfContinueElseDoSomething()
         {
             var testCode = string.Format(codeTemplate, @"
-            foreach (var foo in bar) 
+            foreach (var foo in bar)
             {
-                if (foo.Count == 3) 
+                if (foo.Count == 3)
                 {
                     continue;
                 }

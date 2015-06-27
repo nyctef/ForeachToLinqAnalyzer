@@ -46,7 +46,7 @@ namespace ConsoleApplication1
         public void SuggestsForInitialVariableAssignment()
         {
             var testCode = string.Format(codeTemplate, @"
-            foreach (var foo in bar) 
+            foreach (var foo in bar)
             {
                 var foo2 = foo.Increment();
                 foo2.Frombulate();
@@ -69,7 +69,7 @@ namespace ConsoleApplication1
         public void DoesntBreakMultipleDeclaratorsInAssignment()
         {
             var testCode = string.Format(codeTemplate, @"
-            foreach (var foo in bar) 
+            foreach (var foo in bar)
             {
                 var foo2 = foo.Increment(), foo3 = new Bar();
                 foo2.Frombulate();
