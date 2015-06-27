@@ -1,16 +1,16 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using TestHelper;
 using ForeachToLinqAnalyzer;
 using System.Collections.Generic;
 using System.Linq;
+using NUnit.Framework;
 
 namespace ForeachToLinqAnalyzer.Test
 {
-    [TestClass]
+    [TestFixture]
     public class UnitTest : CodeFixVerifier
     {
         private readonly string codeTemplate = @"
@@ -36,7 +36,7 @@ namespace ConsoleApplication1
     }}
 }}";
         //No diagnostics expected to show up
-        [TestMethod]
+        [Test]
         public void TestMethod1()
         {
             var test = @"";
@@ -45,7 +45,7 @@ namespace ConsoleApplication1
         }
 
         //Diagnostic and CodeFix both triggered and checked for
-        [TestMethod]
+        [Test]
         public void TestMethod2()
         {
             var testCode = string.Format(codeTemplate, "");
@@ -55,7 +55,7 @@ namespace ConsoleApplication1
             Assert.AreEqual(0, diagnostics.Length);
         }
 
-        [TestMethod]
+        [Test]
         public void SuggestsWhereWhenBodyOfForeachHasNullCheck()
         {
             var testCode = string.Format(codeTemplate, @"
@@ -80,7 +80,7 @@ namespace ConsoleApplication1
             VerifyCSharpFix(testCode, fixedCode);
         }
 
-        [TestMethod]
+        [Test]
         public void FixDoesntBreakWhenLoopVariableIsUsedTwiceInIfClause()
         {
             var testCode = string.Format(codeTemplate, @"
@@ -101,7 +101,7 @@ namespace ConsoleApplication1
             VerifyCSharpFix(testCode, fixedCode);
         }
 
-        [TestMethod]
+        [Test]
         public void CanOperateOnComplexForeachExpression()
         {
             var testCode = string.Format(codeTemplate, @"
@@ -121,7 +121,7 @@ namespace ConsoleApplication1
             VerifyCSharpFix(testCode, fixedCode);
         }
 
-        [TestMethod]
+        [Test]
         public void SuggestsWhenBodyOfForeachHasSimpleEqualityCheck()
         {
             var testCode = string.Format(codeTemplate, @"
@@ -146,7 +146,7 @@ namespace ConsoleApplication1
             VerifyCSharpFix(testCode, fixedCode);
         }
 
-        [TestMethod]
+        [Test]
         public void DoesntSuggestWhenBodyOfForeachHasStatementsOutsideOfIf()
         {
             var testCode = string.Format(codeTemplate, @"
@@ -163,7 +163,7 @@ namespace ConsoleApplication1
             Assert.AreEqual(0, diagnostics.Length);
         }
         
-        [TestMethod]
+        [Test]
         public void DoesntSuggestWhenIfStatementIsUnrelated()
         {
             var testCode = string.Format(codeTemplate, @"
@@ -179,7 +179,7 @@ namespace ConsoleApplication1
             Assert.AreEqual(0, diagnostics.Length);
         }
 
-        [TestMethod]
+        [Test]
         public void SuggestsForInitialIfThenContinueStatement()
         {
             var testCode = string.Format(codeTemplate, @"
@@ -207,7 +207,7 @@ namespace ConsoleApplication1
             VerifyCSharpFix(testCode, fixedCode);
         }
 
-        [TestMethod]
+        [Test]
         public void DoesntSuggestForWritelineWithoutBlock()
         {
             var testCode = string.Format(codeTemplate, @"
@@ -219,7 +219,7 @@ namespace ConsoleApplication1
             Assert.AreEqual(0, diagnostics.Length);
         }
 
-        [TestMethod]
+        [Test]
         public void DoesntSuggestWhenContainingIfStatementHasElseBlock()
         {
             var testCode = string.Format(codeTemplate, @"
@@ -239,7 +239,7 @@ namespace ConsoleApplication1
             Assert.AreEqual(0, diagnostics.Length);
         }
 
-        [TestMethod]
+        [Test]
         public void SuggestsForIfContinueElseDoSomething()
         {
             var testCode = string.Format(codeTemplate, @"

@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using TestHelper;
 
 namespace ForeachToLinqAnalyzer.Test
 {
-    [TestClass]
+    [TestFixture]
     public class TurnsSingleAssignmentIntoSelectCalls : CodeFixVerifier
     {
         private readonly string codeTemplate = @"
@@ -42,7 +42,7 @@ namespace ConsoleApplication1
     }}
 }}";
 
-        [TestMethod]
+        [Test]
         public void SuggestsForInitialVariableAssignment()
         {
             var testCode = string.Format(codeTemplate, @"
@@ -65,7 +65,7 @@ namespace ConsoleApplication1
             VerifyCSharpFix(testCode, fixedCode);
         }
 
-        [TestMethod]
+        [Test]
         public void DoesntBreakMultipleDeclaratorsInAssignment()
         {
             var testCode = string.Format(codeTemplate, @"
@@ -85,7 +85,7 @@ namespace ConsoleApplication1
             VerifyCSharpFix(testCode, fixedCode);
         }
 
-        [TestMethod]
+        [Test]
         public void DoesntSuggestIfLoopVariableIsUsedLater()
         {
             var testCode = string.Format(codeTemplate, @"
@@ -99,7 +99,7 @@ namespace ConsoleApplication1
             Assert.AreEqual(0, diagnostics.Length);
         }
 
-        [TestMethod]
+        [Test]
         public void DoesntBreakOnIncompleteCode()
         {
             var testCode = string.Format(codeTemplate, @"
@@ -113,7 +113,7 @@ namespace ConsoleApplication1
             Assert.AreEqual(0, diagnostics.Length);
         }
 
-        [TestMethod]
+        [Test]
         public void LoopVariableCanBeUsedMoreThanOnceInOneRValue()
         {
             var testCode = string.Format(codeTemplate, @"
@@ -136,7 +136,7 @@ namespace ConsoleApplication1
             VerifyCSharpFix(testCode, fixedCode);
         }
 
-        [TestMethod]
+        [Test]
         public void LoopVariableCanNotBeUsedInMoreThanOneRValue()
         {
             var testCode = string.Format(codeTemplate, @"
