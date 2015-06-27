@@ -64,13 +64,14 @@ namespace ForeachToLinqAnalyzer
                 LocalDeclarationStatementSyntax assignmentStatement;
                 if (TrySearchForVariableToSelect(fe, out assignmentStatement, loopVariableName))
                 {
-                    foreach (var declarator in assignmentStatement.Declaration.Variables)
+                    var declaratorsBasedOnLoopVariable = assignmentStatement.Declaration.Variables
+                        .Where(x => x.Initializer?.DescendantNodes()?.OfType<IdentifierNameSyntax>()?.Any(y => y.Identifier.Text == loopVariableName) ?? false);
+
+                    if (declaratorsBasedOnLoopVariable.Count() == 1)
                     {
-                        if (declarator.Initializer?.DescendantNodes()?.OfType<IdentifierNameSyntax>()?.Any(x => x.Identifier.Text == loopVariableName) ?? false)
-                        {
-                            var properties = new Dictionary<string, string> { { RefactorType, VariableToSelect } }.ToImmutableDictionary();
-                            context.ReportDiagnostic(Diagnostic.Create(Rule, declarator.GetLocation(), properties));
-                        }
+                        var declarator = declaratorsBasedOnLoopVariable.Single();
+                        var properties = new Dictionary<string, string> { { RefactorType, VariableToSelect } }.ToImmutableDictionary();
+                        context.ReportDiagnostic(Diagnostic.Create(Rule, declarator.GetLocation(), properties));
                     }
                 }
             }

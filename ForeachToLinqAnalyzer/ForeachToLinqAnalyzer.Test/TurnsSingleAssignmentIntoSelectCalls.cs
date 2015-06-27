@@ -139,7 +139,15 @@ namespace ConsoleApplication1
         [TestMethod]
         public void LoopVariableCanNotBeUsedInMoreThanOneRValue()
         {
-            Assert.Inconclusive();
+            var testCode = string.Format(codeTemplate, @"
+            foreach (var foo in bar) 
+            {
+                var foo2 = foo.Increment(), foo3 = foo.Increment();
+                foo2.Frombulate();
+            }");
+            var diagnostics = GetDiagnostics(testCode);
+
+            Assert.AreEqual(0, diagnostics.Length);
         }
 
         private string GetDiagnosticCode(string code, Diagnostic diagnostic)
