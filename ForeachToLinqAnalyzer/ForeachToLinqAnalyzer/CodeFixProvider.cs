@@ -122,14 +122,14 @@ namespace ForeachToLinqAnalyzer
             var oldVariableName = foreachStatement.Identifier.Text;
             var newVariableName = variableDeclarator.Identifier.Text;
 
-            var oldVariable = variableDeclarator.Initializer.Value.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>().Single(x => x.Identifier.Text == oldVariableName);
+            var oldVariables = variableDeclarator.Initializer.Value.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>().Where(x => x.Identifier.Text == oldVariableName);
 
             var selectCall = generator.InvocationExpression(
                 generator.MemberAccessExpression(foreachStatement.Expression, "Select"),
                 generator.Argument(
                     generator.ValueReturningLambdaExpression(
                         new[] { generator.LambdaParameter("x") },
-                            variableDeclarator.Initializer.Value.ReplaceNode(oldVariable, generator.IdentifierName("x")))));
+                            variableDeclarator.Initializer.Value.ReplaceNodes(oldVariables, (x, y) => generator.IdentifierName("x")))));
 
             var root = await document.GetSyntaxRootAsync(c);
 

@@ -116,7 +116,24 @@ namespace ConsoleApplication1
         [TestMethod]
         public void LoopVariableCanBeUsedMoreThanOnceInOneRValue()
         {
-            Assert.Inconclusive();
+            var testCode = string.Format(codeTemplate, @"
+            foreach (var foo in bar)
+            {
+                var foo2 = new Bar { Count = foo.Count + foo.Count };
+                foo2.Frombulate();
+            }");
+            var diagnostics = GetDiagnostics(testCode);
+
+            Assert.AreEqual(1, diagnostics.Length);
+            Assert.AreEqual("foo2 = new Bar { Count = foo.Count + foo.Count }", GetDiagnosticCode(testCode, diagnostics.Single()));
+
+            var fixedCode = string.Format(codeTemplate, @"
+            foreach (var foo2 in bar.Select(x => new Bar { Count = x.Count + x.Count }))
+            {
+                foo2.Frombulate();
+            }");
+
+            VerifyCSharpFix(testCode, fixedCode);
         }
 
         [TestMethod]
