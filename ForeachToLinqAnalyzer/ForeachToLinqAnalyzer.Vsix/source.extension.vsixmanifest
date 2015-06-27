@@ -1,9 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Id="ForeachToLinqAnalyzer.Vsix..1780d6c1-3266-4ce3-8b57-d28a2db198c0" Version="1.0" Language="en-US" Publisher="mark"/>
-    <DisplayName>ForeachToLinqAnalyzer.Vsix</DisplayName>
-    <Description xml:space="preserve">This is a sample diagnostic extension for the .NET Compiler Platform ("Roslyn").</Description>
+    <Identity Id="ForeachToLinqAnalyzer.Vsix..1780d6c1-3266-4ce3-8b57-d28a2db198c0" Version="1.0" Language="en-US" Publisher="Mark Jordan (@nyctef)"/>
+    <DisplayName>ForeachToLinq Analyzer</DisplayName>
+    <Description xml:space="preserve">Experimental diagnostic / code fixes for converting imperative foreach code to declarative LINQ method chains.
+
+Inspired by http://martinfowler.com/articles/refactoring-pipelines.html and ReSharper</Description>
+    <MoreInfo>https://github.com/nyctef/ForeachToLinqAnalyzer</MoreInfo>
   </Metadata>
   <Installation>
     <InstallationTarget Version="[14.0,]" Id="Microsoft.VisualStudio.Pro" />
