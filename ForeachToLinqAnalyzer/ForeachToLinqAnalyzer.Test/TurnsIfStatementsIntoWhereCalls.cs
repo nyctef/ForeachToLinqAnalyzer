@@ -81,6 +81,27 @@ namespace ConsoleApplication1
         }
 
         [TestMethod]
+        public void FixDoesntBreakWhenLoopVariableIsUsedTwiceInIfClause()
+        {
+            var testCode = string.Format(codeTemplate, @"
+            foreach (var foo in bar) 
+            {
+                if (foo != null && foo.Count != 3)
+                {
+                    foo.Frombulate();
+                }
+            }");
+
+            var fixedCode = string.Format(codeTemplate, @"
+            foreach (var foo in bar.Where(x => x != null && x.Count != 3))
+            {
+                foo.Frombulate();
+            }");
+
+            VerifyCSharpFix(testCode, fixedCode);
+        }
+
+        [TestMethod]
         public void CanOperateOnComplexForeachExpression()
         {
             var testCode = string.Format(codeTemplate, @"

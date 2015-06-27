@@ -69,14 +69,14 @@ namespace ForeachToLinqAnalyzer
         {
             var generator = SyntaxGenerator.GetGenerator(document);
 
-            var variableName = ifStatement.Condition.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>().Single(x => x.Identifier.Text == foreachStatement.Identifier.Text);
+            var oldVariables = ifStatement.Condition.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>().Where(x => x.Identifier.Text == foreachStatement.Identifier.Text);
 
             var whereCall = generator.InvocationExpression(
                 generator.MemberAccessExpression(foreachStatement.Expression, "Where"),
                 generator.Argument(
                     generator.ValueReturningLambdaExpression(
                         new[] { generator.LambdaParameter("x") }, 
-                        ifStatement.Condition.ReplaceNode(variableName, generator.IdentifierName("x")))));
+                        ifStatement.Condition.ReplaceNodes(oldVariables, (x, y) => generator.IdentifierName("x")))));
 
             var root = await document.GetSyntaxRootAsync(c);
 
@@ -92,7 +92,7 @@ namespace ForeachToLinqAnalyzer
         {
             var generator = SyntaxGenerator.GetGenerator(document);
 
-            var variableName = ifStatement.Condition.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>().Single(x => x.Identifier.Text == foreachStatement.Identifier.Text);
+            var oldVariables = ifStatement.Condition.DescendantNodesAndSelf().OfType<IdentifierNameSyntax>().Where(x => x.Identifier.Text == foreachStatement.Identifier.Text);
 
             var whereCall = generator.InvocationExpression(
                 generator.MemberAccessExpression(foreachStatement.Expression, "Where"),
@@ -100,7 +100,7 @@ namespace ForeachToLinqAnalyzer
                     generator.ValueReturningLambdaExpression(
                         new[] { generator.LambdaParameter("x") },
                         generator.LogicalNotExpression(
-                            ifStatement.Condition.ReplaceNode(variableName, generator.IdentifierName("x"))))));
+                            ifStatement.Condition.ReplaceNodes(oldVariables, (x, y) => generator.IdentifierName("x"))))));
 
             var root = await document.GetSyntaxRootAsync(c);
 
